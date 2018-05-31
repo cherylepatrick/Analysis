@@ -129,9 +129,9 @@ IsotopeSample::IsotopeSample(string isotopeName)
 {
   if (isotopeName=="Se" || isotopeName=="se" || isotopeName=="SE")
     {
-//      this->Initialize("Se",82,7.,10.07e19,2.5,2,3.2,4.39912675943585491e-02);
 
-      this->Initialize("Se",82,7.,10.07e19,2.5,2,3.2,0.0440500); // get fraction with true total energy over 2MeV
+      //this->Initialize("Se",82,7.,10.07e19,2.5,2,3.2,0.0440500); // get fraction with true total energy over 2MeV
+      this->Initialize("Se",82,7.,10.07e19,2.5,2,3.2,1.);
     }
   else if  (isotopeName=="Ca" || isotopeName=="ca" || isotopeName=="CA")
     {
@@ -153,7 +153,7 @@ void IsotopeSample::Print()
   cout<<"Mass: "<<this->GetIsotopeMassKg()<<" kg"<<endl;
   cout<<"Exposure: "<<exposureYears_<<" years"<<endl;
   cout<<"2nubb halflife: "<<backgroundHalfLife_<<" years"<<endl;
-  cout<<"Energy range "<<minEnergy_<<" - "<<maxEnergy_<<" MeV contains "<<fractionOfEventsIn2bbSample_<<" of total events"<<endl;
+  cout<<"Energy range "<<minEnergy_<<" - "<<maxEnergy_<<" MeV contains "<<fractionOfEventsIn2bbSample_*100<<"% of total events"<<endl;
 }
 void IsotopeSample::Initialize (string isotopeName, int molarMass, double isotopeMassKg,double backgroundHalfLife,  double exposureYears,  double minEnergy,  double  maxEnergy, double fractionOfEventsIn2bbSample) {
   this->SetIsotopeName(isotopeName);
@@ -181,6 +181,7 @@ TH1D* EstimateSensitivity(TH1D *energy_0nubb, TH1D *energy_2nubb, IsotopeSample 
 double WindowMethodFindExpSigEvts(Double_t B);
 TH1D* PlotBackgroundIsotopeEfficiency(BackgroundIsotope *bgIsotope, string additionalCut, double minEnergy, double maxEnergy);
 TH1D* PlotBackgroundIsotopeEnergy(BackgroundIsotope *bgIsotope, string additionalCut, double minEnergy, double maxEnergy);
+TH1D* EstimateSensitivity (IsotopeSample *sample, TH1D *efficiency0nubb, TH1D *efficiency2nubb, vector<TH1D *> backgroundIsotopeEnergies);
 
 int main()
 {
@@ -240,7 +241,7 @@ void MakePlotsForIsotope(string filename0nubb, string filename2nubb, IsotopeSamp
   // ??? I'm not sure that this is necessarily instructive, but this mechanism allows us to make a bunch of cuts where we add additional cuts to the standard set. Ib this case I am turning on and off the NEMO 3 probability cuts. We might want to turn on and off things like the negative charge requirement, or some kind of vertex separation cut
   MakePlotsForExtraCut(tree0nubb, totalEntries0nubb, tree2nubb, totalEntries2nubb, PROBCUT, "No charge requirement, NEMO3 internal/external prob cuts", "no_electron_cut_int_ext_prob", sample);
 
-  MakePlotsForExtraCut(tree0nubb, totalEntries0nubb, tree2nubb, totalEntries2nubb, "", "No probability cuts", "no_electron_cut", sample);
+//  MakePlotsForExtraCut(tree0nubb, totalEntries0nubb, tree2nubb, totalEntries2nubb, "", "No probability cuts", "no_electron_cut", sample);
 
 
  // MakePlotsForExtraCut(tree0nubb, totalEntries0nubb, tree2nubb, totalEntries2nubb, "&& sensitivity.number_of_electrons==2 && sensitivity.external_probability<0.01 && sensitivity.internal_probability>0.04", "Two -ve tracks,  NEMO3 internal/external prob cuts", "two_electron_int_ext_prob", sample);
@@ -281,7 +282,6 @@ void MakePlotsForExtraCut(TTree *tree0nubb, double totalEntries0nubb, TTree *tre
   string totalcut=MAINCUT+extraCut;
   cout<<"Cut is "<<totalcut<<endl;
   tree0nubb->Draw("(reco.total_calorimeter_energy)>>energy0nuBB",totalcut.c_str(),"HIST");
-//  tree0nubb->Draw("(reco.total_calorimeter_energy)>>energy0nuBB",("reco.number_of_electrons==2 && reco.passes_two_calorimeters && reco.passes_associated_calorimeters && (reco.higher_electron_energy != reco.lower_electron_energy) "+extraCut ).c_str(),"HIST");
 
   // And the 2nubb
   TH1D *energy2nubb=new TH1D("energy2nuBB","energy2nuBB",nbins,sample->GetMinEnergy(),sample->GetMaxEnergy());
@@ -331,7 +331,7 @@ void MakePlotsForExtraCut(TTree *tree0nubb, double totalEntries0nubb, TTree *tre
   // We can add more in here you can see the examples of where I have in the past tried to use surface and tracker samples. But the numbers I used were bizarre and wrong so I commented them out.
 
 // Newest measurement 370uBq total
-  backgroundIsotopes.push_back(new BackgroundIsotope("Tl", 208, 370.,"/Users/cpatrick/SuperNEMO/LaurenSamples/208Tl_bulk_sensitivity.root","foils"));
+  backgroundIsotopes.push_back(new BackgroundIsotope("Tl", 208, 2.*7.,"/Users/cpatrick/SuperNEMO/LaurenSamples/208Tl_bulk_sensitivity.root","foils"));
   
 //  backgroundIsotopes.push_back(new BackgroundIsotope("Tl", 208, 370.,"/home/vagrant/PhD/PhDYear3/Background/MCC1/208Tl_bulk_sensitivity.root","foils"));
      // target is 2 uBq/kg (J Mott thesis)
@@ -342,7 +342,7 @@ void MakePlotsForExtraCut(TTree *tree0nubb, double totalEntries0nubb, TTree *tre
   // (HOW ARE THESE SO DIFFERENT?) so try that for now
   // Using Dave's "typical measurement 300uBq per kilo"
   //backgroundIsotopes.push_back(new BackgroundIsotope("Bi", 214, 300.*7.,"/home/vagrant/PhD/PhDYear3/Background/MCC1/214Bi_bulk_sensitivity.root","foils"));
-  backgroundIsotopes.push_back(new BackgroundIsotope("Bi", 214, 300.*7.,"/Users/cpatrick/SuperNEMO/LaurenSamples/214Bi_bulk_sensitivity.root","foils"));
+  backgroundIsotopes.push_back(new BackgroundIsotope("Bi", 214, 10.*7.,"/Users/cpatrick/SuperNEMO/LaurenSamples/214Bi_bulk_sensitivity.root","foils"));
 
  // backgroundIsotopes.push_back(new BackgroundIsotope("Bi", 214, 10.*7.,"/Users/cpatrick/SuperNEMO/rootfiles/rootfiles_backgrounds/bi214_foil_sensitivity.root","foils"));
 //
@@ -366,12 +366,23 @@ void MakePlotsForExtraCut(TTree *tree0nubb, double totalEntries0nubb, TTree *tre
   // Now it loops through and draws them all
   for (int i=0;i<backgroundIsotopes.size();i++)
     {
-      backgroundIsotopeEfficiencies.push_back(PlotBackgroundIsotopeEfficiency(backgroundIsotopes.at(i),extraCut,sample->GetMinEnergy(),sample->GetMaxEnergy()));
+  backgroundIsotopeEfficiencies.push_back(PlotBackgroundIsotopeEfficiency(backgroundIsotopes.at(i),extraCut,sample->GetMinEnergy(),sample->GetMaxEnergy()));
       backgroundIsotopeEnergies.push_back(PlotBackgroundIsotopeEnergy(backgroundIsotopes.at(i),extraCut,sample->GetMinEnergy(),sample->GetMaxEnergy()));
     }
 
   // Use the efficiencies to calculate a sensitivity
+  
+  // CP 31/5/2018 Add sensitivity estimate using the simple formula, and including backgrounds
+  TH1D *sensitivity_w_bg=EstimateSensitivity(sample,efficiency0nubb,efficiency2nubb,backgroundIsotopeEnergies);
+  c->SetLogy(false);
+  sensitivity_w_bg->GetYaxis()->SetRangeUser(0,1e25);
+  sensitivity_w_bg->SetTitle(("^{"+sample->GetMolarMassText()+"}"+sample->GetIsotopeName()+" "+cutTitle).c_str());
+  sensitivity_w_bg->Draw("HIST P");
+  c->SaveAs(("plots/"+sample->GetIsotopeName()+sample->GetMolarMassText()+"_sensitivity_with_backgrounds_"+cutFilenameSuffix+".png").c_str());
 
+  return; ////////////// TAKE THIS LINE OUT
+  
+  
   // ??? It is a long time since I have looked at this. I tried to steal from James Mott. It does something that is not crazy, but I am sure we can do better if we try harder to understand it. We should review it and see what we can improve. I understand the point of this a lot better now than I did when I wrote this code. But it should at least do SOMETHING.
 
   TH1D *sensitivity=EstimateSensitivity(energy0nubb, energy2nubb,sample,efficiency0nubb,efficiency2nubb);
@@ -477,6 +488,45 @@ TH1D* PlotEfficiency(TTree *tree, double totalEntries, string additionalCut, dou
   efficiency->GetXaxis()->SetTitle(title.c_str());
   return efficiency;
 
+}
+
+TH1D* EstimateSensitivity (IsotopeSample *sample, TH1D *efficiency0nubb, TH1D *efficiency2nubb, vector<TH1D *> backgroundIsotopeEnergies)
+{
+  
+  // Use formula from p7 of Reviews of Modern Physics vol 80 issue 2 pages 481-516 (2008)
+  // Halflife (to n_sigma) = (4.16e26 years/n_sigma) * efficiency * isotopic abundance / atomic mass
+  // * sqrt (mass * exposure / (background per keV per kg year * energy window) )
+  
+  // Adapt this to what we have available:
+  // Halflife (to n_sigma) = (4.16e26 years/n_sigma) * 0nubb efficiency in energy window * number of kg of source * exposure in years / atomic mass in kg
+  // * sqrt (1 / total number of background events in the energy window)
+  
+  double numberOfSigma=4.; // We can change this to get different levels of confidence
+  double magicScalingFactor = 4.16e26; // years
+  
+  TH1D *sensitivityPlot=(TH1D*)efficiency0nubb->Clone("sensitivity");
+  
+  double prefactor = (magicScalingFactor / numberOfSigma) * ( sample->GetIsotopeMassKg() * sample->GetExposureYears() / sample->GetMolarMass());
+  
+  // Loop the bins to populate the plot
+  for (int bin=1;bin<=efficiency0nubb->GetNbinsX();bin++)
+  {
+    double this0nubbEff = efficiency0nubb->GetBinContent(bin);
+    double bkgdEvents=0;
+    // Add the number of events for each background isotope
+    for (int bkgd=0; bkgd<backgroundIsotopeEnergies.size(); bkgd++)
+    {
+      bkgdEvents += backgroundIsotopeEnergies.at(bkgd)->GetBinContent(bin);
+    }
+    // Then add events for the 2nubb irreducible background
+    bkgdEvents +=EstimateBackgroundEvents(efficiency2nubb->GetBinContent(bin), sample);
+    
+    // Populate the histogram with the calculated sensitivity at for that energy cut
+    sensitivityPlot->SetBinContent(bin, prefactor * this0nubbEff / TMath::Sqrt(bkgdEvents));
+  }
+  cout<<" --- New sensitivity plot --- "<<endl;
+  sensitivityPlot->Print("ALL");
+  return sensitivityPlot;
 }
 
 // ?? We should review this and understand what I did here, because I cannot really remember. I stole it from James Mott
@@ -613,7 +663,6 @@ double EstimateHalflifeSensitivity  (double signalEfficiency, double backgroundE
   return sensitivity;
 }
 
-
 double EstimateBackgroundEvents(double backgroundEfficiency, IsotopeSample *sample)
 {
   // Get the number of atoms you start with
@@ -645,9 +694,7 @@ int CalculateEfficiencies(TTree *tree,  IsotopeSample *sample, bool is2nubb, int
   // Reconstructable events
   int totalEntries=tree->GetEntries();
 
-  // In the 2nubb case, some simulated events are not reconstructed
   cout<<"Total events "<<totalEntries<<endl;
-  cout<<"Reconstructable entries "<<totalEntries<<endl;
 
   // Our efficiency should be calculated as a fraction of the total events we generated, not as a fraction of the events we managed to reconstruct
 
@@ -677,11 +724,13 @@ int CalculateEfficiencies(TTree *tree,  IsotopeSample *sample, bool is2nubb, int
   // ??? Why do I have 2-3.2 as my RoI?!? This could be more interesting with e.g. 2.65-3.2
 
   int passesProbabilityAndRoI=tree->GetEntries("reco.passes_two_calorimeters && reco.passes_two_clusters && reco.passes_two_tracks && reco.passes_associated_calorimeters && reco.external_probability<0.01 && reco.internal_probability>0.04 &&  (reco.total_calorimeter_energy)>=2 &&   (reco.total_calorimeter_energy)< 3.2");
-  cout<<"Passes internal/external probability in Se82ROI: "<<(double)passesProbabilityAndRoI/(double)totalEntries * 100<<"%"<<endl;
+  //cout<<"Passes internal/external probability in 2-3.2 MeV: "<<(double)passesProbabilityAndRoI/(double)totalEntries * 100 <<"%"<<endl;
+  cout<<"Passes internal/external probability in 2-3.2 MeV: "<<(double)passesProbabilityAndRoI/(double)totalEntries * (is2nubb?sample->GetFractionOfEventsIn2bbSample ():1) * 100 <<"%"<<endl;
+
 
   // And both tracks have negative charge reconstruction
 
-//  int passesTwoElectronCut=tree->GetEntries("reco.passes_two_calorimeters && reco.passes_two_clusters && reco.passes_two_tracks && reco.passes_associated_calorimeters && reco.number_of_electrons==2  && reco.external_probability<0.01 && reco.internal_probability>0.04 &&  (reco.total_calorimeter_energy)>=2 &&   (reco.total_calorimeter_energy)< 3.2");
+  //int passesTwoElectronCut=tree->GetEntries("reco.passes_two_calorimeters && reco.passes_two_clusters && reco.passes_two_tracks && reco.passes_associated_calorimeters && reco.number_of_electrons==2  && reco.external_probability<0.01 && reco.internal_probability>0.04 &&  (reco.total_calorimeter_energy)>=2 &&   (reco.total_calorimeter_energy)< 3.2");
  // cout<<"And both tracks have negative charge: "<<(double)passesTwoElectronCut/(double)totalEntries * 100<<"%"<<endl;
 
   return totalEntries;
