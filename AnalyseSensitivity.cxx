@@ -186,7 +186,9 @@ int main()
 {
   IsotopeSample *se_sample= new IsotopeSample("Se");
   // !!!!! You need to provide a 0nu and a 2 nu file here
-  MakePlotsForIsotope("/home/vagrant/PhD/PhDYear3/Background/MCC1/82Se_0nubb_bulk_sensitivity.root", "/home/vagrant/PhD/PhDYear3/Background/MCC1/82Se_2nubb_bulk_sensitivity.root", se_sample);
+  //MakePlotsForIsotope("/home/vagrant/PhD/PhDYear3/Background/MCC1/82Se_0nubb_bulk_sensitivity.root", "/home/vagrant/PhD/PhDYear3/Background/MCC1/82Se_2nubb_bulk_sensitivity.root", se_sample);
+  MakePlotsForIsotope("/Users/cpatrick/SuperNEMO/LaurenSamples/82Se_0nubb_bulk_sensitivity.root", "/Users/cpatrick/SuperNEMO/LaurenSamples/82Se_source_bulk_sensitivity.root", se_sample);
+  
 //  MakePlotsForIsotope("/Users/cpatrick/SuperNEMO/rootfiles/rootfiles_se82/se82_0nubb_1M_sensitivity.root", "/Users/cpatrick/SuperNEMO/rootfiles/rootfiles_se82/se82_2nubbHE_1M_sensitivity.root", se_sample);
 
   // IsotopeSample *ca_sample= new IsotopeSample("Ca");
@@ -329,7 +331,9 @@ void MakePlotsForExtraCut(TTree *tree0nubb, double totalEntries0nubb, TTree *tre
   // We can add more in here you can see the examples of where I have in the past tried to use surface and tracker samples. But the numbers I used were bizarre and wrong so I commented them out.
 
 // Newest measurement 370uBq total
-  backgroundIsotopes.push_back(new BackgroundIsotope("Tl", 208, 370.,"/home/vagrant/PhD/PhDYear3/Background/MCC1/208Tl_bulk_sensitivity.root","foils"));
+  backgroundIsotopes.push_back(new BackgroundIsotope("Tl", 208, 370.,"/Users/cpatrick/SuperNEMO/LaurenSamples/208Tl_bulk_sensitivity.root","foils"));
+  
+//  backgroundIsotopes.push_back(new BackgroundIsotope("Tl", 208, 370.,"/home/vagrant/PhD/PhDYear3/Background/MCC1/208Tl_bulk_sensitivity.root","foils"));
      // target is 2 uBq/kg (J Mott thesis)
 //  backgroundIsotopes.push_back(new BackgroundIsotope("Tl", 208, 2.*7.,"/Users/cpatrick/SuperNEMO/rootfiles/rootfiles_backgrounds/tl208_foil_sensitivity.root","foils"));
 
@@ -337,7 +341,8 @@ void MakePlotsForExtraCut(TTree *tree0nubb, double totalEntries0nubb, TTree *tre
   // However target is 10 uBq/kg (J Mott thesis)
   // (HOW ARE THESE SO DIFFERENT?) so try that for now
   // Using Dave's "typical measurement 300uBq per kilo"
-  backgroundIsotopes.push_back(new BackgroundIsotope("Bi", 214, 300.*7.,"/home/vagrant/PhD/PhDYear3/Background/MCC1/214Bi_bulk_sensitivity.root","foils"));
+  //backgroundIsotopes.push_back(new BackgroundIsotope("Bi", 214, 300.*7.,"/home/vagrant/PhD/PhDYear3/Background/MCC1/214Bi_bulk_sensitivity.root","foils"));
+  backgroundIsotopes.push_back(new BackgroundIsotope("Bi", 214, 300.*7.,"/Users/cpatrick/SuperNEMO/LaurenSamples/214Bi_bulk_sensitivity.root","foils"));
 
  // backgroundIsotopes.push_back(new BackgroundIsotope("Bi", 214, 10.*7.,"/Users/cpatrick/SuperNEMO/rootfiles/rootfiles_backgrounds/bi214_foil_sensitivity.root","foils"));
 //
