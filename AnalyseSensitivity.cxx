@@ -252,20 +252,20 @@ TH1D* PlotBackgroundIsotopeEnergy(BackgroundIsotope *bgIsotope, string additiona
   TFile *f = new TFile((bgIsotope->GetRootFileName()).c_str());
   TTree *tree = (TTree*)f->Get("Sensitivity");
   int nbins=(int)(sample->GetMaxEnergy()*20-sample->GetMinEnergy()*20);
-  string plotName="energy";
+  string plotName=bgIsotope->GetIsotopeName()+"_"+bgIsotope->GetIsotopeLocation();
   TH1D *energyPlot=new TH1D(plotName.c_str(),plotName.c_str(),nbins,sample->GetMinEnergy(),sample->GetMaxEnergy());
   string title=bgIsotope->GetIsotopeName()+"-"+bgIsotope->GetMolarMassText()+" ("+bgIsotope->GetIsotopeLocation()+")";
   energyPlot->SetTitle(title.c_str());
 
-  tree->Draw("(reco.total_calorimeter_energy)>>energy",(MAINCUT+additionalCut).c_str(),"HIST");
+  tree->Draw(("(reco.total_calorimeter_energy)>>"+plotName).c_str(),(MAINCUT+additionalCut).c_str(),"HIST");
 
   // Scale the plot to the isotope activity
   int simulatedEvents=tree->GetEntries();
   double secondsInAYear=365.25 * 24 * 60 * 60;
-  double activityPerSecond = bgIsotope->GetActivityMicroBq() / 1000000;
+  double activityPerSecond = bgIsotope->GetActivityMicroBq() / 1.e6;
   double totalExpectedEvents = activityPerSecond * secondsInAYear * sample->GetExposureYears();
   energyPlot->Sumw2();
-  cout<<bgIsotope->GetIsotopeName()<<": simulated "<<simulatedEvents<<" events - expect "<<totalExpectedEvents<<" events (before cuts)"<<endl;
+  cout<<bgIsotope->GetIsotopeName()<<" "<<bgIsotope->GetIsotopeLocation()<<": simulated "<<simulatedEvents<<" events - expect "<<totalExpectedEvents<<" events (before cuts)"<<endl;
   energyPlot->Scale(totalExpectedEvents/simulatedEvents);
 
   return energyPlot;
