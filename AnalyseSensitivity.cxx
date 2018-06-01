@@ -180,7 +180,7 @@ double ExpectedLimitSigEvts(double ConfidenceLevel, TH1D* h_signal, TH1D* h_back
 TH1D* EstimateSensitivity(TH1D *energy_0nubb, TH1D *energy_2nubb, IsotopeSample *sample, TH1D* efficiency_0nubb, TH1D* efficiency_2nubb);
 double WindowMethodFindExpSigEvts(Double_t B);
 TH1D* PlotBackgroundIsotopeEfficiency(BackgroundIsotope *bgIsotope, string additionalCut, double minEnergy, double maxEnergy);
-TH1D* PlotBackgroundIsotopeEnergy(BackgroundIsotope *bgIsotope, string additionalCut, double minEnergy, double maxEnergy);
+TH1D* PlotBackgroundIsotopeEnergy(BackgroundIsotope *bgIsotope, string additionalCut,  IsotopeSample *sample);
 TH1D* EstimateSensitivity (IsotopeSample *sample, TH1D *efficiency0nubb, TH1D *efficiency2nubb, vector<TH1D *> backgroundIsotopeEnergies);
 
 int main()
@@ -190,8 +190,6 @@ int main()
   //MakePlotsForIsotope("/home/vagrant/PhD/PhDYear3/Background/MCC1/82Se_0nubb_bulk_sensitivity.root", "/home/vagrant/PhD/PhDYear3/Background/MCC1/82Se_2nubb_bulk_sensitivity.root", se_sample);
   MakePlotsForIsotope("/Users/cpatrick/SuperNEMO/LaurenSamples/82Se_0nubb_bulk_sensitivity.root", "/Users/cpatrick/SuperNEMO/LaurenSamples/82Se_source_bulk_sensitivity.root", se_sample);
   
-//  MakePlotsForIsotope("/Users/cpatrick/SuperNEMO/rootfiles/rootfiles_se82/se82_0nubb_1M_sensitivity.root", "/Users/cpatrick/SuperNEMO/rootfiles/rootfiles_se82/se82_2nubbHE_1M_sensitivity.root", se_sample);
-
   // IsotopeSample *ca_sample= new IsotopeSample("Ca");
   //  MakePlotsForIsotope("/Users/cpatrick/Dropbox/SuperNEMO/sensitivity/rootfiles/ca48_0nubb_100k_sensitivity.root", "/Users/cpatrick/Dropbox/SuperNEMO/sensitivity/rootfiles/ca48_2nubbHE_1M_sensitivity.root", ca_sample);
 
@@ -249,18 +247,27 @@ void MakePlotsForIsotope(string filename0nubb, string filename2nubb, IsotopeSamp
 }
 
 // This is the energy plot for an individual background isotope with whatever cuts you are using
-TH1D* PlotBackgroundIsotopeEnergy(BackgroundIsotope *bgIsotope, string additionalCut, double minEnergy, double maxEnergy)
+TH1D* PlotBackgroundIsotopeEnergy(BackgroundIsotope *bgIsotope, string additionalCut, IsotopeSample *sample)
 {
   TFile *f = new TFile((bgIsotope->GetRootFileName()).c_str());
   TTree *tree = (TTree*)f->Get("Sensitivity");
-  int nbins=(int)(maxEnergy*20-minEnergy*20);
+  int nbins=(int)(sample->GetMaxEnergy()*20-sample->GetMinEnergy()*20);
   string plotName="energy";
-  TH1D *energyPlot=new TH1D(plotName.c_str(),plotName.c_str(),nbins,minEnergy,maxEnergy);
+  TH1D *energyPlot=new TH1D(plotName.c_str(),plotName.c_str(),nbins,sample->GetMinEnergy(),sample->GetMaxEnergy());
   string title=bgIsotope->GetIsotopeName()+"-"+bgIsotope->GetMolarMassText()+" ("+bgIsotope->GetIsotopeLocation()+")";
   energyPlot->SetTitle(title.c_str());
 
   tree->Draw("(reco.total_calorimeter_energy)>>energy",(MAINCUT+additionalCut).c_str(),"HIST");
-  //tree->Draw("(reco.total_calorimeter_energy)>>energy",("reco.number_of_electrons==2 && reco.passes_two_calorimeters && reco.passes_associated_calorimeters "+additionalCut ).c_str(),"HIST");
+
+  // Scale the plot to the isotope activity
+  int simulatedEvents=tree->GetEntries();
+  double secondsInAYear=365.25 * 24 * 60 * 60;
+  double activityPerSecond = bgIsotope->GetActivityMicroBq() / 1000000;
+  double totalExpectedEvents = activityPerSecond * secondsInAYear * sample->GetExposureYears();
+  energyPlot->Sumw2();
+  cout<<bgIsotope->GetIsotopeName()<<": simulated "<<simulatedEvents<<" events - expect "<<totalExpectedEvents<<" events (before cuts)"<<endl;
+  energyPlot->Scale(totalExpectedEvents/simulatedEvents);
+
   return energyPlot;
 }
 
@@ -367,7 +374,7 @@ void MakePlotsForExtraCut(TTree *tree0nubb, double totalEntries0nubb, TTree *tre
   for (int i=0;i<backgroundIsotopes.size();i++)
     {
   backgroundIsotopeEfficiencies.push_back(PlotBackgroundIsotopeEfficiency(backgroundIsotopes.at(i),extraCut,sample->GetMinEnergy(),sample->GetMaxEnergy()));
-      backgroundIsotopeEnergies.push_back(PlotBackgroundIsotopeEnergy(backgroundIsotopes.at(i),extraCut,sample->GetMinEnergy(),sample->GetMaxEnergy()));
+  backgroundIsotopeEnergies.push_back(PlotBackgroundIsotopeEnergy(backgroundIsotopes.at(i),extraCut,sample));
     }
 
   // Use the efficiencies to calculate a sensitivity
