@@ -386,8 +386,6 @@ void MakePlotsForExtraCut(TTree *tree0nubb, double totalEntries0nubb, TTree *tre
   sensitivity_w_bg->SetTitle(("^{"+sample->GetMolarMassText()+"}"+sample->GetIsotopeName()+" "+cutTitle).c_str());
   sensitivity_w_bg->Draw("HIST P");
   c->SaveAs(("plots/"+sample->GetIsotopeName()+sample->GetMolarMassText()+"_sensitivity_with_backgrounds_"+cutFilenameSuffix+".png").c_str());
-
-  return; ////////////// TAKE THIS LINE OUT
   
   
   // ??? It is a long time since I have looked at this. I tried to steal from James Mott. It does something that is not crazy, but I am sure we can do better if we try harder to understand it. We should review it and see what we can improve. I understand the point of this a lot better now than I did when I wrote this code. But it should at least do SOMETHING.
@@ -443,7 +441,7 @@ void MakePlotsForExtraCut(TTree *tree0nubb, double totalEntries0nubb, TTree *tre
       cout<<thisIsotope->GetIsotopeName()<<" "<<thisIsotope->GetIsotopeLocation()<<" Efficiency: "<<thisIsotopeEfficiency<<" Events: "<<thisIsotopeEvents<<endl;
       TH1D *thisIsotopeEnergy=backgroundIsotopeEnergies.at(i);
       thisIsotopeEnergy->Sumw2();
-      thisIsotopeEnergy->Scale(thisIsotopeEvents/thisIsotopeEnergy->Integral());
+ //     thisIsotopeEnergy->Scale(thisIsotopeEvents/thisIsotopeEnergy->Integral());
 
       totalBkgd->Add(thisIsotopeEnergy);
       thisIsotopeEnergy->SetLineColor(colours[i]);
@@ -459,6 +457,7 @@ void MakePlotsForExtraCut(TTree *tree0nubb, double totalEntries0nubb, TTree *tre
   // Print the results last because TLimit has masses of annoying output
   cout<<"Sensitivity from TLimit (no other isotopes): "<<tLimitSensitivity<<" years "<<endl;
   cout<<"Sensitivity from Window Method (no other isotopes): "<<sensitivity->GetBinContent(sensitivity->GetMaximumBin())<<" cutting at  "<<sensitivity->GetBinLowEdge(sensitivity->GetMaximumBin())<<"MeV"<<endl;
+  cout<<"Sensitivity from Window Method (with backgrounds): "<<sensitivity_w_bg->GetBinContent(sensitivity_w_bg->GetMaximumBin())<<" cutting at  "<<sensitivity_w_bg->GetBinLowEdge(sensitivity_w_bg->GetMaximumBin())<<"MeV"<<endl;
   cout<<"Sensitivity from TLimit including background isotopes: "<<totalTLimitSensitivity<<" years "<<endl;
 
   TH1D *scaledSignal=(TH1D*)energy0nubb->Clone();
