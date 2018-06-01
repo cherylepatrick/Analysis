@@ -95,7 +95,10 @@ BackgroundIsotope::BackgroundIsotope(string isotopeName, int molarMass, double a
 // !!! I am not sure if you can do that with new falaise, it is on the wish list but we should check
 class IsotopeSample : public Isotope{
 
-  double backgroundHalfLife_, exposureYears_, minEnergy_,  maxEnergy_ ,fractionOfEventsIn2bbSample_, isotopeMassKg_;
+  double backgroundHalfLife_, exposureYears_, minEnergy_,  maxEnergy_ ,fractionOfEventsIn2bbSample_, isotopeMassKg_, activityMicroBq_;
+  
+  double CalculateActivity();
+  
   public:
   IsotopeSample(string isotopeName, int molarMass, double isotopeMassKg,double backgroundHalfLife,  double exposureYears,  double minEnergy,  double  maxEnergy, double fractionOfEventsIn2bbSample);
   IsotopeSample(){};
@@ -107,6 +110,7 @@ class IsotopeSample : public Isotope{
   double GetMaxEnergy (){return maxEnergy_;}
   double GetFractionOfEventsIn2bbSample (){return fractionOfEventsIn2bbSample_;}
   double GetIsotopeMassKg (){return isotopeMassKg_;}
+  double GetActivityMicroBq (){return activityMicroBq_;}
 
   void SetBackgroundHalfLife (double val){backgroundHalfLife_=val;}
   void SetExposureYears (double val){exposureYears_=val;}
@@ -166,6 +170,21 @@ void IsotopeSample::Initialize (string isotopeName, int molarMass, double isotop
   fractionOfEventsIn2bbSample_=fractionOfEventsIn2bbSample;
   cout<<"Sample initialized: "<<endl;
   this->Print();
+}
+
+double IsotopeSample::CalculateActivity()
+{
+  // Get the number of decays per year
+  // It's the number of atoms * the probability that an atom will decay
+  double nSourceAtoms=AVOGADRO * (isotopeMassKg_ * 1000) / this->GetMolarMass(); //Avogadro is grams
+  // Decay rate is 1/decay constant (proportional to halflife)
+  double decayProbability = TMath::Log(2) / backgroundHalfLife_; // per year as half life is in years
+  
+  double decaysPerYear = nSourceAtoms * decayProbability;
+  // Now convert to microBq
+  double secondsInAYear = 365.25 * 24 * 60 * 60;
+  activityMicroBq_ = decaysPerYear / secondsInAYear * 1.e6;
+  return activityMicroBq_;
 }
 
 // Main code is from here on out
@@ -401,7 +420,7 @@ void MakePlotsForExtraCut(TTree *tree0nubb, double totalEntries0nubb, TTree *tre
 
   TH1D *tempSignal=(TH1D*)energy0nubb->Clone();
   TH1D *scaledBkgd=(TH1D*)energy2nubb->Clone();
-  // Expeccted number of background events in the plotted range
+  // Expected number of background events in the plotted range
   double backgroundEvents=EstimateBackgroundEvents(efficiency2nubb->GetBinContent(1), sample);
 
   cout<<"Expected number of 2nubb events "<<backgroundEvents<<endl;
@@ -525,6 +544,7 @@ TH1D* EstimateSensitivity (IsotopeSample *sample, TH1D *efficiency0nubb, TH1D *e
       bkgdEvents += backgroundIsotopeEnergies.at(bkgd)->GetBinContent(bin);
     }
     // Then add events for the 2nubb irreducible background
+    // ###### This should be from the other plot, make it so
     bkgdEvents +=EstimateBackgroundEvents(efficiency2nubb->GetBinContent(bin), sample);
     
     // Populate the histogram with the calculated sensitivity at for that energy cut
@@ -652,22 +672,22 @@ double ExpectedLimitSigEvts(double ConfidenceLevel, TH1D* h_signal, TH1D* h_back
   return h_signal->Integral() * this_val;
 }
 
-double EstimateHalflifeSensitivity  (double signalEfficiency, double backgroundEfficiency, IsotopeSample *sample)
-{
-  double numberOfSigma=4.;
-  // Get the total number of background events we expect to see in the energy window, after all cuts
-  double backgroundEvents=EstimateBackgroundEvents(backgroundEfficiency, sample);
-  if (backgroundEvents==0) return 0; // Is this true? Maybe if there is no background there is no background and that is just great
-
-   // Use formula from p7 of Reviews of Modern Physics vol 80 issue 2 pages 481-516 (2008)
-
-   // Background per kilo per year = b Delta E in formula
-   double backgroundRate=backgroundEvents / ( sample->GetIsotopeMassKg() *  sample->GetExposureYears());
-
-   double sensitivity=(4.16e26 / numberOfSigma) * (signalEfficiency/sample->GetMolarMass()) *  TMath::Sqrt( sample->GetIsotopeMassKg() *  sample->GetExposureYears()/backgroundRate );
-
-  return sensitivity;
-}
+//double EstimateHalflifeSensitivity  (double signalEfficiency, double backgroundEfficiency, IsotopeSample *sample)
+//{
+//  double numberOfSigma=4.;
+//  // Get the total number of background events we expect to see in the energy window, after all cuts
+//  double backgroundEvents=EstimateBackgroundEvents(backgroundEfficiency, sample);
+//  if (backgroundEvents==0) return 0; // Is this true? Maybe if there is no background there is no background and that is just great
+//
+//   // Use formula from p7 of Reviews of Modern Physics vol 80 issue 2 pages 481-516 (2008)
+//
+//   // Background per kilo per year = b Delta E in formula
+//   double backgroundRate=backgroundEvents / ( sample->GetIsotopeMassKg() *  sample->GetExposureYears());
+//
+//   double sensitivity=(4.16e26 / numberOfSigma) * (signalEfficiency/sample->GetMolarMass()) *  TMath::Sqrt( sample->GetIsotopeMassKg() *  sample->GetExposureYears()/backgroundRate );
+//
+//  return sensitivity;
+//}
 
 double EstimateBackgroundEvents(double backgroundEfficiency, IsotopeSample *sample)
 {
